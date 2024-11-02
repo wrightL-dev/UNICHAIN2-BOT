@@ -32,7 +32,7 @@ Sebelum menjalankan proyek ini, pastikan Anda telah menginstal:
 2. Instal paket yang diperlukan:
 
     ```bash
-    npm install node-telegram-bot-api web3 dotenv axios fs uuid
+    npm install node-telegram-bot-api web3 dotenv axios fs uuid child_process
     ```
 
 3. Buat file `.env` dan tambahkan konfigurasi berikut:
