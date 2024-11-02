@@ -11,7 +11,7 @@ Proyek ini adalah skrip Node.js yang memungkinkan pengguna untuk melakukan trans
 - **Bukti Transaksi**
 - **Pengaturan jumlah transaksi dan durasi**
 
-![Fitur Bridge Sepolia dan Unichain](UNICHAIN-BOT.png)
+![Fitur Bridge Sepolia dan Unichain](UNICHAIN-BOT.jpg)
 
 ## Persyaratan
 
