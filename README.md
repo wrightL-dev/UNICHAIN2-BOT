@@ -38,12 +38,12 @@ Sebelum menjalankan proyek ini, pastikan Anda telah menginstal:
 3. Buat file `.env` dan tambahkan konfigurasi berikut:
 
     ```plaintext
-    SEPOLIA_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
-UNICHAIN_RPC_URL=https://sepolia.unichain.org/
-SENDER_ADDRESS=<WALLET ADDRESS>
-PRIVATE_KEY=<PRIVATE KEY ADDRESS KALIAN>
-TELEGRAM_BOT_TOKEN=<API BOT, BUAT DI @BotFather>
-CHAT_ID=<ID TELEGRAM>
+   SEPOLIA_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
+    UNICHAIN_RPC_URL=https://sepolia.unichain.org/
+    SENDER_ADDRESS=<WALLET ADDRESS>
+    PRIVATE_KEY=<PRIVATE KEY ADDRESS KALIAN>
+    TELEGRAM_BOT_TOKEN=<API BOT, BUAT DI @BotFather>
+    CHAT_ID=<ID TELEGRAM>
 
 4. **node main.js**
 
