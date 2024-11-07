@@ -1,17 +1,32 @@
 {
-  "name": "UNICHAIN",
+  "name": "bridge-bot",
   "version": "1.0.0",
-  "description": "UNICHAIN BY WRIGHTL",
+  "description": "A Node.js bot to bridge transactions using Web3 and Telegram API",
   "main": "main.js",
   "type": "module",
   "scripts": {
     "start": "node main.js"
   },
   "dependencies": {
-    "node-telegram-bot-api": "^0.57.0",
-    "web3": "^1.7.0",
-    "dotenv": "^16.0.3",
-    "axios": "^1.4.0",
-    "uuid": "^9.0.0"
-  }
+    "axios": "^1.7.7",
+    "child_process": "^1.0.2",
+    "dotenv": "^16.0.0",
+    "i": "^0.3.7",
+    "install": "^0.13.0",
+    "node-telegram-bot-api": "^0.61.0",
+    "npm": "^10.9.0",
+    "uuid": "^10.0.0",
+    "web3": "^1.8.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "bridge",
+    "bot",
+    "web3",
+    "telegram"
+  ],
+  "author": "wrightL-Dev",
+  "license": "ISC"
 }
