@@ -22,20 +22,20 @@ Sebelum menjalankan proyek ini, pastikan Anda telah menginstal:
 
 ## Instalasi
 
-1. Clone repository ini:
+1. **Clone repository ini:**
 
     ```bash
     git clone https://github.com/wrightL-dev/UNICHAIN2-BOT
     cd UNICHAIN2-BOT
     ```
 
-2. Instal paket yang diperlukan:
+2. **Instal paket yang diperlukan:**
 
     ```bash
     npm install node-telegram-bot-api web3 dotenv axios fs uuid child_process
     ```
 
-3. Buat file `.env` dan tambahkan konfigurasi berikut:
+3. **Buat file `.env` dan tambahkan konfigurasi berikut:**
 
     ```plaintext
    SEPOLIA_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
