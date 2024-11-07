@@ -44,7 +44,8 @@ Sebelum menjalankan proyek ini, pastikan Anda telah menginstal:
     PRIVATE_KEY=<PRIVATE KEY ADDRESS KALIAN>
     TELEGRAM_BOT_TOKEN=<API BOT, BUAT DI @BotFather>
     CHAT_ID=<ID TELEGRAM>
-
+ Note: Hapus < dan > Jangan Lupa
+ 
 4. **node main.js**
 
 ## Penggunaan
