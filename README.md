@@ -1,4 +1,4 @@
-# Bot Telegram Testnet Unichain, Bridge antara Sepolia dan Unichain, serta melakukan transaksi dari Unichain ke wallet orang lain.
+# Bot Telegram Testnet Unichain
 
 Proyek ini adalah skrip Node.js yang memungkinkan pengguna untuk melakukan transaksi antara jaringan Sepolia dan Unichain. Anda dapat melakukan bridging dari Sepolia ke Unichain dan sebaliknya, serta mengirim Unichain ke alamat wallet lain..
 
@@ -8,6 +8,8 @@ Proyek ini adalah skrip Node.js yang memungkinkan pengguna untuk melakukan trans
 - **Bridge Unichain ke Sepolia ETH**
 - **Kirim Unichain ke alamat wallet lain**
 - **Cek Total Transaksi**
+- **Deploy Token**
+- **Kirim Token**
 - **Bukti Transaksi**
 - **Pengaturan jumlah transaksi dan durasi**
 
@@ -56,7 +58,8 @@ Setelah menjalankan skrip, Anda akan disajikan dengan menu untuk memilih opsi ya
 2. **Bridge Unichain > Sepolia ETH**
 3. **Kirim Ke Wallet Orang Lain**
 4. **Cek Total Transaksi**
-5. **Keluar**
+5. **Deploy Token**
+6. **Kirim Token**
 
 Jika Anda ingin mengirim Unichain ke banyak wallet, Anda bisa mengubah isi file `wallets.txt` untuk menambahkan alamat wallet yang diinginkan. Pastikan setiap alamat wallet ditulis pada baris terpisah. Ikuti petunjuk yang ada untuk melakukan transaksi yang diinginkan.
 
