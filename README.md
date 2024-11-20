@@ -1,4 +1,4 @@
-# Bot Telegram Testnet Unichain
+# Testnet Unichain - Integrasi Bot Telegram
 
 Proyek ini adalah skrip Node.js yang memungkinkan pengguna untuk melakukan transaksi antara jaringan Sepolia dan Unichain. Anda dapat melakukan bridging dari Sepolia ke Unichain dan sebaliknya, serta mengirim Unichain ke alamat wallet lain..
 
