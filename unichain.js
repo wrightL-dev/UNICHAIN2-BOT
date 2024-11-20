@@ -395,7 +395,7 @@ async function fetchTransactionCount(chatId) {
 • Alamat Pengguna: ${senderAddress}
 • Total Transaksi: ${transactionCount}
 • Status: ${transactionCount > 0 ? 'Ada Transaksi' : 'Belum Ada Transaksi'}
-• Link Jumlah Transaksi: https://unichain-sepolia.blockscout.com/tx/${senderAddress}
+• Link Jumlah Transaksi: https://unichain-sepolia.blockscout.com/address/${senderAddress}?tab=txs
 
 ===================================
 `);
