@@ -43,7 +43,7 @@ bot.on('message', async (msg) => {
     if (msg.text === 'Bridge Sepolia ETH > Unichain') {
         bot.sendMessage(chatId, 'Masukkan jumlah yang akan di-bridge:');
         bot.once('message', async (amountMsg) => {
-            const amount = parseFloat(amountMsg.text) || 0.01;
+            const amount = parseFloat(amountMsg.text.replace(',', '.')) || 0.01;
             bot.sendMessage(chatId, 'Ingin berapa kali bridge?');
             bot.once('message', async (countMsg) => {
                 const count = parseInt(countMsg.text) || 1;
@@ -57,7 +57,7 @@ bot.on('message', async (msg) => {
     } else if (msg.text === 'Bridge Unichain > Sepolia ETH') {
         bot.sendMessage(chatId, 'Masukkan jumlah yang akan di-bridge:');
         bot.once('message', async (amountMsg) => {
-            const amount = parseFloat(amountMsg.text) || 0.01;
+            const amount = parseFloat(amountMsg.text.replace(',', '.')) || 0.01;
             bot.sendMessage(chatId, 'Ingin berapa kali bridge?');
             bot.once('message', async (countMsg) => {
                 const count = parseInt(countMsg.text) || 1;
@@ -237,9 +237,14 @@ bot.sendMessage(chatId, message);
                         return;
                     }
 
-                    bot.sendMessage(chatId, 'Masukkan jumlah token yang akan dikirim:');
+                    bot.sendMessage(chatId, 'Masukkan jumlah token yang akan dikirim (Minimal 1 Token):');
                     bot.once('message', async (amountMsg) => {
-                        const amount = parseFloat(amountMsg.text);
+                    const amount = parseFloat(amountMsg.text);
+
+                    if (isNaN(amount) || amount < 1) {
+                        bot.sendMessage(chatId, 'Jumlah token tidak valid. Minimal 1 token harus dimasukkan.');
+                        return;
+                    }
 
                         bot.sendMessage(chatId, 'Ingin berapa kali transaksi berulang?');
                         bot.once('message', async (countMsg) => {
@@ -271,8 +276,8 @@ bot.sendMessage(chatId, message);
 • Nama Token: ${tokenName}
 • Jumlah Token Dikirim: ${amount} ${tokenName}
 • Wallet Penerima: ${wallet}
-• TX HASH: ${transferTx.transactionHash}
-• Link Transaksi: https://unichain-sepolia.blockscout.com/tx/${transferTx.transactionHash}
+• TX HASH: ${tx.transactionHash}
+• Link Transaksi: https://unichain-sepolia.blockscout.com/tx/${tx.transactionHash}
 
 ===================================
                                     `, { parse_mode: 'Markdown' });
@@ -404,10 +409,12 @@ async function bridgeSepoliaToUnichain(amount, chatId) {
     try {
         const nonce = await web3Sepolia.eth.getTransactionCount(senderAddress);
         const gasPrice = await web3Sepolia.eth.getGasPrice();
+        const amountString = amount.toFixed(18); 
         const tx = {
             from: senderAddress,
             to: senderAddress,
-            value: web3Sepolia.utils.toWei(amount.toString(), 'ether'),
+            //value: web3Sepolia.utils.toWei(amount.toString(), 'ether'),
+            value: web3Unichain.utils.toWei(amountString, 'ether'),
             gas: 21000,
             gasPrice: gasPrice,
             nonce: nonce,
@@ -419,7 +426,7 @@ async function bridgeSepoliaToUnichain(amount, chatId) {
 =====| Bridge Sepolia ETH > Unichain |=====
 
 • Transaksi Bridge Berhasil!
-• Jumlah Sepolia yang Dibridge: ${amount}
+• Jumlah Sepolia yang Dibridge: ${amountString}
 • TX HASH: ${receipt.transactionHash}
 • Link Transaksi: https://sepolia.etherscan.io/tx/${receipt.transactionHash}
 
@@ -436,10 +443,12 @@ async function bridgeUnichainToSepolia(amount, chatId) {
     try {
         const nonce = await web3Unichain.eth.getTransactionCount(senderAddress);
         const gasPrice = await web3Unichain.eth.getGasPrice();
+        const amountString = amount.toFixed(18);
         const tx = {
             from: senderAddress,
             to: senderAddress,
-            value: web3Unichain.utils.toWei(amount.toString(), 'ether'),
+            //value: web3Unichain.utils.toWei(amount.toString(), 'ether'),
+            value: web3Unichain.utils.toWei(amountString, 'ether'),
             gas: 21000,
             gasPrice: gasPrice,
             nonce: nonce,
@@ -451,7 +460,7 @@ async function bridgeUnichainToSepolia(amount, chatId) {
 =====| Bridge Unichain > Sepolia ETH |=====
 
 • Proses Bridge Sukses!
-• Jumlah Unichain yang Dibridge: ${amount}
+• Jumlah Unichain yang Dibridge: ${amountString}
 • TX HASH: ${receipt.transactionHash}
 • Lihat Transaksi di Sepolia: https://unichain-sepolia.blockscout.com/tx/${receipt.transactionHash}
 
@@ -468,12 +477,13 @@ async function sendEth(toAddress, amount, chatId) {
         const nonce = await web3Unichain.eth.getTransactionCount(senderAddress);
         const gasPrice = await web3Unichain.eth.getGasPrice();
         
-        const amountFormatted = web3Unichain.utils.toWei(amount.toFixed(10).toString(), 'ether');
-        
+        //const amountFormatted = web3Unichain.utils.toWei(amount.toFixed(10).toString(), 'ether');
+        const amountString = amount.toFixed(18);
         const tx = {
             from: senderAddress,
             to: toAddress,
-            value: amountFormatted,
+            //value: amountFormatted,
+            value: web3Unichain.utils.toWei(amountString, 'ether'),
             gas: 21000,
             gasPrice: gasPrice,
             nonce: nonce,
@@ -486,8 +496,8 @@ async function sendEth(toAddress, amount, chatId) {
 =====| Transaksi Unichain > Random Wallet |=====
 
 • Transaksi Berhasil Terkirim!
-• Jumlah Unichain yang Dikirim: ${amount}
-• Ke Wallet: ${walletAddress}
+• Jumlah Unichain yang Dikirim: ${amountString}
+• Ke Wallet: ${toAddress}
 • TX HASH: ${receipt.transactionHash}
 • Lihat Detail Transaksi: https://unichain-sepolia.blockscout.com/tx/${receipt.transactionHash}
 
