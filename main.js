@@ -4,6 +4,17 @@ const otherScripts = [
     'node unichain.js',
 ];
 
+function clearConsole() {
+  console.clear();
+  console.log("======================================================");
+  console.log("\x1b[38;5;213mBY: wrightL\x1b[0m");
+  console.log("\x1b[38;5;117mGITHUB: https://github.com/wrightL-dev\x1b[0m");
+  console.log("\x1b[38;5;159mTELEGRAM CHANNEL: https://t.me/tahuri01\x1b[0m");
+  console.log("==================== BOT UNICHAIN ====================");
+  console.log("\x1b[38;5;82m[✔️ ] BOT STATUS: \x1b[38;5;46mRUNNING\x1b[0m");
+  console.log("======================================================");
+}
+
 function runScripts(scripts) {
     scripts.forEach(script => {
         exec(script, (error, stdout, stderr) => {
@@ -20,10 +31,9 @@ function runScripts(scripts) {
     });
 }
 
-// Run the scripts immediately and then start intervals
 function startIntervals() {
+    clearConsole();
     runScripts(otherScripts);
 }
 
-// Start the process
 startIntervals();
