@@ -3,9 +3,11 @@ import Web3 from 'web3';
 import dotenv from 'dotenv';
 import axios from 'axios';
 import fs from 'fs';
-//import { v4 as uuidv4 } from 'uuid';
-import pkg from 'uuid';
-const { v4: uuidv4 } = pkg;
+import path from 'path';
+import solc from 'solc';
+import { v4 as uuidv4 } from 'uuid';
+/*import pkg from 'uuid';
+const { v4: uuidv4 } = pkg;*/
 
 dotenv.config();
 
@@ -24,7 +26,9 @@ bot.onText(/\/start/, (msg) => {
                 ['Bridge Sepolia ETH > Unichain'],
                 ['Bridge Unichain > Sepolia ETH'],
                 ['Tx Unichain > Random Wallet'],
-                ['Cek Total Transaksi']
+                ['Cek Total Transaksi'],
+                ['Deploy Token'],
+                ['Kirim Token']
             ],
             resize_keyboard: true,
             one_time_keyboard: true,
@@ -94,8 +98,235 @@ bot.on('message', async (msg) => {
         });
     } else if (msg.text === 'Cek Total Transaksi') {
         await fetchTransactionCount(chatId);
+    } else if (msg.text === 'Deploy Token') {
+    const contractPath = path.resolve("contracts", "MyToken.sol");
+    if (!fs.existsSync(contractPath)) {
+        bot.sendMessage(chatId, 'File kontrak MyToken.sol tidak ditemukan.');
+        return;
+    }
+
+    try {
+        const { abi, bytecode } = compileContract(contractPath);
+
+        fs.writeFileSync("MyTokenABI.json", JSON.stringify(abi, null, 2));
+        fs.writeFileSync("MyTokenBytecode.txt", bytecode);
+
+        bot.sendMessage(chatId, 'Masukkan nama token (example: WrightL):');
+        bot.once('message', async (nameMsg) => {
+            const tokenName = nameMsg.text;
+            bot.sendMessage(chatId, 'Masukkan simbol token (example: WRL - Maksimal 4 huruf):');
+            bot.once('message', async (symbolMsg) => {
+                const tokenSymbol = symbolMsg.text;
+                bot.sendMessage(chatId, 'Masukkan total supply token (example: 10000000):');
+                bot.once('message', async (supplyMsg) => {
+                    const totalSupply = parseInt(supplyMsg.text);
+
+                    if (totalSupply > 99999999) {
+                        bot.sendMessage(chatId, 'Total supply token tidak boleh lebih dari 99,999,999. Silakan coba lagi.');
+                        return;
+                    }
+
+                    try {
+                        const account = web3Unichain.eth.accounts.privateKeyToAccount(privateKey);
+                        web3Unichain.eth.accounts.wallet.add(account);
+
+                        if (senderAddress.toLowerCase() !== account.address.toLowerCase()) {
+                            throw new Error("Alamat pengirim tidak sesuai dengan private key.");
+                        }
+
+                        const contract = new web3Unichain.eth.Contract(abi);
+                        const deployTx = contract.deploy({
+                            data: bytecode,
+                            arguments: [tokenName, tokenSymbol, totalSupply],
+                        });
+
+                        const gasEstimate = await deployTx.estimateGas({ from: senderAddress });
+                        const receipt = await deployTx.send({
+                            from: senderAddress,
+                            gas: gasEstimate,
+                        });
+
+                        const deployData = `${receipt.options.address}|${tokenName}\n`;
+                        fs.appendFileSync('deploy.txt', deployData, 'utf8');
+
+
+                        let transferTx;
+                        try {
+                           const tokenContract = new web3Unichain.eth.Contract(abi, receipt.options.address);
+                            const amountToSend = web3Unichain.utils.toWei(totalSupply.toString());
+                            const gasEstimateTransfer = await tokenContract.methods.transfer(senderAddress, amountToSend).estimateGas({ from: senderAddress });
+                            transferTx = await tokenContract.methods.transfer(senderAddress, amountToSend).send({
+                                from: senderAddress,
+                                gas: gasEstimateTransfer,
+                            });
+                            //console.log("Transfer berhasil:", transferTx.transactionHash);
+
+                        } catch (transferError) {
+                            console.error("Gagal mengirim token setelah deploy:", transferError);
+                            bot.sendMessage(chatId, `Gagal mengirim token setelah deploy: ${transferError.message}`);
+                        }
+
+
+                        let message = `
+=====| Unichain-Bot |=====
+
+• Token berhasil dideploy!
+• Address: ${receipt.options.address}
+• Data disimpan ke file: deploy.txt
+
+${transferTx ? 
+`• Token berhasil dikirim ke wallet Anda.
+ • TX HASH ID: ${transferTx.transactionHash}
+ • Link: https://unichain-sepolia.blockscout.com/tx/${transferTx.transactionHash}` : 
+`• Gagal mengirim token ke alamat Anda.`}
+
+===================================
+`;
+
+bot.sendMessage(chatId, message);
+
+
+
+                    } catch (deployError) {
+                        console.error("Error deploying token:", deployError);
+                        bot.sendMessage(chatId, `Error deploying token: ${deployError.message}`);
+                    }
+                });
+            });
+        });
+
+    } catch (compileError) {
+        console.error("Error compiling contract:", compileError);
+        bot.sendMessage(chatId, `Error compiling contract: ${compileError.message}`);
+    }
+    } else if (msg.text === 'Kirim Token') {
+        let deployData = "";
+        try {
+            deployData = fs.readFileSync("deploy.txt", "utf8");
+        } catch (err) {
+            bot.sendMessage(chatId, "Belum ada token yang di-deploy.");
+            return;
+        }
+
+        let tokenEntries = deployData.trim().split('\n').map(entry => {
+            const [address, name] = entry.split('|');
+            return `Nama: ${name}\nAddress: \`${address}\` _Klik Untuk Menyalin_`;
+        });
+
+        const message = `List Deploy Token ERC20 Milik Anda:\n\n${tokenEntries.join('\n\n')}`;
+        bot.sendMessage(chatId, message, { parse_mode: 'MarkdownV2' });
+
+        bot.sendMessage(chatId, 'Masukkan alamat kontrak token ERC-20:');
+        bot.once('message', async (tokenAddressMsg) => {
+            const tokenAddress = tokenAddressMsg.text.trim();
+
+            try {
+                if (!web3Unichain.utils.isAddress(tokenAddress)) {
+                    throw new Error("Alamat token tidak valid.");
+                }
+
+                bot.sendMessage(chatId, 'Masukkan nama file wallet (contoh: wallets.txt) atau masukkan alamat wallet langsung:');
+                bot.once('message', async (inputMsg) => {
+                    let wallets = [];
+                    if (fs.existsSync(inputMsg.text)) {
+                        wallets = fs.readFileSync(inputMsg.text, 'utf8').split('\n').map(line => line.trim()).filter(Boolean);
+                    } else if (web3Unichain.utils.isAddress(inputMsg.text)) {
+                        wallets.push(inputMsg.text);
+                    } else {
+                        bot.sendMessage(chatId, 'Alamat wallet tidak valid dan file tidak ditemukan.');
+                        return;
+                    }
+
+                    bot.sendMessage(chatId, 'Masukkan jumlah token yang akan dikirim:');
+                    bot.once('message', async (amountMsg) => {
+                        const amount = parseFloat(amountMsg.text);
+
+                        bot.sendMessage(chatId, 'Ingin berapa kali transaksi berulang?');
+                        bot.once('message', async (countMsg) => {
+                            const count = parseInt(countMsg.text) || 1;
+                            const abi = JSON.parse(fs.readFileSync("MyTokenABI.json", "utf8"));
+                            const tokenContract = new web3Unichain.eth.Contract(abi, tokenAddress);
+
+                            const selectedTokenEntry = deployData.trim().split('\n').find(entry => entry.startsWith(tokenAddress));
+                            const tokenName = selectedTokenEntry ? selectedTokenEntry.split('|')[1] : "Token Tidak Dikenal";
+
+                            for (let i = 0; i < count; i++) {
+                                for (const wallet of wallets) {
+                                    try {
+                                        const account = web3Unichain.eth.accounts.privateKeyToAccount(privateKey);
+                                        web3Unichain.eth.accounts.wallet.add(account);
+                                        if (senderAddress.toLowerCase() !== account.address.toLowerCase()) {
+                                            throw new Error("Alamat pengirim tidak sesuai dengan private key.");
+                                        }
+
+                                        const gasEstimate = await tokenContract.methods.transfer(wallet, web3Unichain.utils.toWei(amount.toString())).estimateGas({ from: senderAddress });
+                                        const tx = await tokenContract.methods.transfer(wallet, web3Unichain.utils.toWei(amount.toString())).send({
+                                            from: senderAddress,
+                                            gas: gasEstimate
+                                        });
+
+                                        bot.sendMessage(chatId, `
+=====| Transaksi Token ERC20 |=====
+
+• Nama Token: ${tokenName}
+• Jumlah Token Dikirim: ${amount} ${tokenName}
+• Wallet Penerima: ${wallet}
+• TX HASH: ${transferTx.transactionHash}
+• Link Transaksi: https://unichain-sepolia.blockscout.com/tx/${transferTx.transactionHash}
+
+===================================
+                                    `, { parse_mode: 'Markdown' });
+
+                                    } catch (error) {
+                                        bot.sendMessage(chatId, `Gagal mengirim token ke ${wallet}: ${error.message}`);
+                                    }
+                                    const delay = Math.floor(Math.random() * (15000 - 11000 + 1) + 11000);
+                                    await new Promise(resolve => setTimeout(resolve, delay));
+                                }
+                            }
+                        });
+                    });
+                });
+            } catch (error) {
+                bot.sendMessage(chatId, `Error: ${error.message}`);
+            }
+        });
     }
 });
+
+function compileContract(contractPath) {
+    const contractSource = fs.readFileSync(contractPath, "utf8");
+    const input = {
+        language: "Solidity",
+        sources: {
+            [path.basename(contractPath)]: {
+                content: contractSource,
+            },
+        },
+        settings: {
+            outputSelection: {
+                "*": {
+                    "*": ["abi", "evm.bytecode"],
+                },
+            },
+        },
+    };
+
+    const output = JSON.parse(solc.compile(JSON.stringify(input)));
+
+    if (output.errors) {
+        output.errors.forEach((err) => {
+            console.error(err.formattedMessage);
+        });
+        throw new Error("Compilation failed.");
+    }
+
+    const contractName = Object.keys(output.contracts[path.basename(contractPath)])[0];
+    const abi = output.contracts[path.basename(contractPath)][contractName].abi;
+    const bytecode = output.contracts[path.basename(contractPath)][contractName].evm.bytecode.object;
+
+    return { abi, bytecode };
+}
 
 function generateUuid() {
     return uuidv4();
@@ -105,21 +336,23 @@ function generateMixpanelCookieValue() {
     const distinct_id = generateUuid();
     const device_id = generateUuid().replace(/-/g, '');
     return {
-        "distinct_id": distinct_id,
-        "$device_id": device_id,
-        "$initial_referrer": "$direct",
-        "$initial_referring_domain": "$direct",
-        "Chain id": "1301",
-        "Environment": "Prod",
-        "Authorized": false,
-        "Viewport width": 433,
-        "Viewport height": 656,
-        "Language": "id-ID",
-        "Device type": "Browser",
-        "User id": distinct_id,
-        "$user_id": distinct_id
+        distinct_id: distinct_id,
+        $device_id: device_id,
+        $initial_referrer: '$direct',
+        $initial_referring_domain: '$direct',
+        'Chain id': '1301',
+        Environment: 'Prod',
+        Authorized: false,
+        'Viewport width': 433,
+        'Viewport height': 656,
+        Language: 'id-ID',
+        'Device type': 'Browser',
+        'User id': distinct_id,
+        $user_id: distinct_id,
     };
 }
+
+
 
 function generateCookies() {
     const uuidValue = generateUuid();
@@ -133,7 +366,7 @@ function generateCookies() {
         `indexing_alert=false`,
         `nav_bar_collapsed=true`,
         `adblock_detected=false`,
-        `${mixpanelCookieName}=${encodeURIComponent(JSON.stringify(mixpanelValue))}`
+        `${mixpanelCookieName}=${encodeURIComponent(JSON.stringify(mixpanelValue))}`,
     ].join('; ');
     return cookieString;
 }
@@ -150,9 +383,19 @@ async function fetchTransactionCount(chatId) {
     const url = `https://unichain-sepolia.blockscout.com/api/v2/addresses/${senderAddress}/counters`;
     try {
         const response = await axios.get(url, { headers });
-        const transactionsCount = response.data.transactions_count || 'N/A';
-        bot.sendMessage(chatId, `Unichain-Bot:\nTotal Transaksi: ${transactionsCount}\nLink: https://unichain-sepolia.blockscout.com/address/${senderAddress}?tab=txs`);
-    } catch (error) {
+        const transactionCount = response.data.transactions_count || 'N/A';
+        bot.sendMessage(chatId, `
+=====| Cek Total Transaksi |=====
+
+• Alamat Pengguna: ${senderAddress}
+• Total Transaksi: ${transactionCount}
+• Status: ${transactionCount > 0 ? 'Ada Transaksi' : 'Belum Ada Transaksi'}
+• Link Jumlah Transaksi: https://unichain-sepolia.blockscout.com/tx/${senderAddress}
+
+===================================
+`);
+
+} catch (error) {
         bot.sendMessage(chatId, `Unichain-Bot:\nError fetching transaction count: ${error.message}`);
     }
 }
@@ -172,7 +415,18 @@ async function bridgeSepoliaToUnichain(amount, chatId) {
         };
         const signedTx = await web3Sepolia.eth.accounts.signTransaction(tx, privateKey);
         const receipt = await web3Sepolia.eth.sendSignedTransaction(signedTx.rawTransaction);
-        bot.sendMessage(chatId, `Unichain-Bot:\nTransaksi Sepolia berhasil!\nTX HASH ID: ${receipt.transactionHash}\nLink: https://sepolia.etherscan.io/tx/${receipt.transactionHash}`);
+        bot.sendMessage(chatId, `
+=====| Bridge Sepolia ETH > Unichain |=====
+
+• Transaksi Bridge Berhasil!
+• Jumlah Sepolia yang Dibridge: ${amount}
+• TX HASH: ${receipt.transactionHash}
+• Link Transaksi: https://sepolia.etherscan.io/tx/${receipt.transactionHash}
+
+===================================
+`);
+
+
     } catch (error) {
         bot.sendMessage(chatId, `Unichain-Bot:\nTerjadi kesalahan saat proses bridge: ${error.message}`);
     }
@@ -193,7 +447,17 @@ async function bridgeUnichainToSepolia(amount, chatId) {
         };
         const signedTx = await web3Unichain.eth.accounts.signTransaction(tx, privateKey);
         const receipt = await web3Unichain.eth.sendSignedTransaction(signedTx.rawTransaction);
-        bot.sendMessage(chatId, `Unichain-Bot:\nTransaksi Unichain berhasil!\nTX HASH ID: ${receipt.transactionHash}\nLink: https://unichain-sepolia.blockscout.com/tx/${receipt.transactionHash}`);
+        bot.sendMessage(chatId, `
+=====| Bridge Unichain > Sepolia ETH |=====
+
+• Proses Bridge Sukses!
+• Jumlah Unichain yang Dibridge: ${amount}
+• TX HASH: ${receipt.transactionHash}
+• Lihat Transaksi di Sepolia: https://unichain-sepolia.blockscout.com/tx/${receipt.transactionHash}
+
+===================================
+`);
+
     } catch (error) {
         bot.sendMessage(chatId, `Unichain-Bot:\nTerjadi kesalahan saat proses bridge: ${error.message}`);
     }
@@ -204,7 +468,6 @@ async function sendEth(toAddress, amount, chatId) {
         const nonce = await web3Unichain.eth.getTransactionCount(senderAddress);
         const gasPrice = await web3Unichain.eth.getGasPrice();
         
-        // Pastikan jumlah dalam format desimal untuk menghindari notasi ilmiah
         const amountFormatted = web3Unichain.utils.toWei(amount.toFixed(10).toString(), 'ether');
         
         const tx = {
@@ -219,7 +482,18 @@ async function sendEth(toAddress, amount, chatId) {
 
         const signedTx = await web3Unichain.eth.accounts.signTransaction(tx, privateKey);
         const receipt = await web3Unichain.eth.sendSignedTransaction(signedTx.rawTransaction);
-        bot.sendMessage(chatId, `Unichain-Bot:\nTransaksi Unichain berhasil!\nTX HASH ID: ${receipt.transactionHash}\nLink: https://unichain-sepolia.blockscout.com/tx/${receipt.transactionHash}`);
+        bot.sendMessage(chatId, `
+=====| Transaksi Unichain > Random Wallet |=====
+
+• Transaksi Berhasil Terkirim!
+• Jumlah Unichain yang Dikirim: ${amount}
+• Ke Wallet: ${walletAddress}
+• TX HASH: ${receipt.transactionHash}
+• Lihat Detail Transaksi: https://unichain-sepolia.blockscout.com/tx/${receipt.transactionHash}
+
+===================================
+`);
+
     } catch (error) {
         bot.sendMessage(chatId, `Unichain-Bot:\nTerjadi kesalahan saat mengirim transaksi ke ${toAddress}: ${error.message}`);
     }
