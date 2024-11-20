@@ -159,7 +159,7 @@ bot.on('message', async (msg) => {
                                 from: senderAddress,
                                 gas: gasEstimateTransfer,
                             });
-                            //console.log("Transfer berhasil:", transferTx.transactionHash);
+                            console.log("Transfer berhasil:", transferTx.transactionHash);
 
                         } catch (transferError) {
                             console.error("Gagal mengirim token setelah deploy:", transferError);
