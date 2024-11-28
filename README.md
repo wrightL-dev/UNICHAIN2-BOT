@@ -31,7 +31,7 @@ Sebelum menjalankan proyek ini, pastikan Anda telah menginstal:
     cd UNICHAIN2-BOT
     ```
 
-2. **Instal paket yang diperlukan:**
+2. **Instal package yang diperlukan:**
 
     ```bash
     npm install node-telegram-bot-api web3 solc dotenv axios fs uuid child_process
