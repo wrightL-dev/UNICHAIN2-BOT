@@ -177,7 +177,7 @@ bot.on('message', async (msg) => {
 ${transferTx ? 
 `• Token berhasil dikirim ke wallet Anda.
  • TX HASH ID: ${transferTx.transactionHash}
- • Link: https://unichain-sepolia.blockscout.com/tx/${transferTx.transactionHash}` : 
+ • Lihat Detail Transaksi: https://unichain-sepolia.blockscout.com/tx/${transferTx.transactionHash}` : 
 `• Gagal mengirim token ke alamat Anda.`}
 
 ===================================
@@ -277,7 +277,7 @@ bot.sendMessage(chatId, message);
 • Jumlah Token Dikirim: ${amount} ${tokenName}
 • Wallet Penerima: ${wallet}
 • TX HASH: ${tx.transactionHash}
-• Link Transaksi: https://unichain-sepolia.blockscout.com/tx/${tx.transactionHash}
+• Lihat Detail Transaksi: https://unichain-sepolia.blockscout.com/tx/${tx.transactionHash}
 
 ===================================
                                     `, { parse_mode: 'Markdown' });
@@ -395,7 +395,7 @@ async function fetchTransactionCount(chatId) {
 • Alamat Pengguna: ${senderAddress}
 • Total Transaksi: ${transactionCount}
 • Status: ${transactionCount > 0 ? 'Ada Transaksi' : 'Belum Ada Transaksi'}
-• Link Jumlah Transaksi: https://unichain-sepolia.blockscout.com/address/${senderAddress}?tab=txs
+• Lihat Detail Transaksi: https://unichain-sepolia.blockscout.com/address/${senderAddress}?tab=txs
 
 ===================================
 `);
@@ -428,7 +428,7 @@ async function bridgeSepoliaToUnichain(amount, chatId) {
 • Transaksi Bridge Berhasil!
 • Jumlah Sepolia yang Dibridge: ${amountString}
 • TX HASH: ${receipt.transactionHash}
-• Link Transaksi: https://sepolia.etherscan.io/tx/${receipt.transactionHash}
+• Lihat Detail Transaksi: https://sepolia.etherscan.io/tx/${receipt.transactionHash}
 
 ===================================
 `);
@@ -462,7 +462,7 @@ async function bridgeUnichainToSepolia(amount, chatId) {
 • Proses Bridge Sukses!
 • Jumlah Unichain yang Dibridge: ${amountString}
 • TX HASH: ${receipt.transactionHash}
-• Lihat Transaksi di Sepolia: https://unichain-sepolia.blockscout.com/tx/${receipt.transactionHash}
+• Lihat Detail Transaksi: https://unichain-sepolia.blockscout.com/tx/${receipt.transactionHash}
 
 ===================================
 `);
