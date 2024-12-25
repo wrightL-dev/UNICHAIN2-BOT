@@ -6,14 +6,42 @@ import fs from 'fs';
 import path from 'path';
 import solc from 'solc';
 import { v4 as uuidv4 } from 'uuid';
-/*import pkg from 'uuid';
-const { v4: uuidv4 } = pkg;*/
 
 dotenv.config();
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
-const web3Sepolia = new Web3(new Web3.providers.HttpProvider(process.env.SEPOLIA_RPC_URL));
-const web3Unichain = new Web3(new Web3.providers.HttpProvider(process.env.UNICHAIN_RPC_URL));
+
+function createWeb3Instance(rpcUrl) {
+    if (rpcUrl.startsWith('ws')) {
+        const provider = new Web3.providers.WebsocketProvider(rpcUrl, {
+            clientConfig: {
+                keepalive: true,
+                keepaliveInterval: 60000 // ms interval untuk mengirim ping
+            },
+            reconnect: {
+                auto: true,
+                delay: 5000, // ms delay untuk recconect
+                maxAttempts: 5,
+                onTimeout: false
+            }
+        });
+
+        provider.on('error', (e) => console.error('WS Error', e));
+        provider.on('end', (e) => {
+            console.log('WS closed');
+            console.log('Attempting to reconnect...');
+        });
+
+        return new Web3(provider);
+    } else {
+        const provider = new Web3.providers.HttpProvider(rpcUrl);
+        return new Web3(provider);
+    }
+}
+
+// Membuat instance Web3 untuk Sepolia dan Unichain menggunakan fungsi baru
+const web3Sepolia = createWeb3Instance(process.env.SEPOLIA_RPC_URL);
+const web3Unichain = createWeb3Instance(process.env.UNICHAIN_RPC_URL);
 
 const senderAddress = process.env.SENDER_ADDRESS;
 const privateKey = process.env.PRIVATE_KEY;
@@ -149,7 +177,6 @@ bot.on('message', async (msg) => {
                         const deployData = `${receipt.options.address}|${tokenName}\n`;
                         fs.appendFileSync('deploy.txt', deployData, 'utf8');
 
-
                         let transferTx;
                         try {
                            const tokenContract = new web3Unichain.eth.Contract(abi, receipt.options.address);
@@ -165,7 +192,6 @@ bot.on('message', async (msg) => {
                             console.error("Gagal mengirim token setelah deploy:", transferError);
                             bot.sendMessage(chatId, `Gagal mengirim token setelah deploy: ${transferError.message}`);
                         }
-
 
                         let message = `
 =====| Unichain-Bot |=====
@@ -405,16 +431,16 @@ async function fetchTransactionCount(chatId) {
     }
 }
 
+// Fungsi untuk bridge Sepolia ke Unichain (diperbarui untuk mendukung WSS)
 async function bridgeSepoliaToUnichain(amount, chatId) {
     try {
         const nonce = await web3Sepolia.eth.getTransactionCount(senderAddress);
         const gasPrice = await web3Sepolia.eth.getGasPrice();
-        const amountString = amount.toFixed(18); 
+        const amountString = amount.toFixed(18);
         const tx = {
             from: senderAddress,
             to: senderAddress,
-            //value: web3Sepolia.utils.toWei(amount.toString(), 'ether'),
-            value: web3Unichain.utils.toWei(amountString, 'ether'),
+            value: web3Sepolia.utils.toWei(amountString, 'ether'),
             gas: 21000,
             gasPrice: gasPrice,
             nonce: nonce,
@@ -432,13 +458,12 @@ async function bridgeSepoliaToUnichain(amount, chatId) {
 
 ===================================
 `);
-
-
     } catch (error) {
         bot.sendMessage(chatId, `Unichain-Bot:\nTerjadi kesalahan saat proses bridge: ${error.message}`);
     }
 }
 
+// Fungsi untuk bridge Unichain ke Sepolia (diperbarui untuk mendukung WSS)
 async function bridgeUnichainToSepolia(amount, chatId) {
     try {
         const nonce = await web3Unichain.eth.getTransactionCount(senderAddress);
@@ -447,7 +472,6 @@ async function bridgeUnichainToSepolia(amount, chatId) {
         const tx = {
             from: senderAddress,
             to: senderAddress,
-            //value: web3Unichain.utils.toWei(amount.toString(), 'ether'),
             value: web3Unichain.utils.toWei(amountString, 'ether'),
             gas: 21000,
             gasPrice: gasPrice,
@@ -466,23 +490,20 @@ async function bridgeUnichainToSepolia(amount, chatId) {
 
 ===================================
 `);
-
     } catch (error) {
         bot.sendMessage(chatId, `Unichain-Bot:\nTerjadi kesalahan saat proses bridge: ${error.message}`);
     }
 }
 
+// Fungsi untuk mengirim ETH (diperbarui untuk mendukung WSS)
 async function sendEth(toAddress, amount, chatId) {
     try {
         const nonce = await web3Unichain.eth.getTransactionCount(senderAddress);
         const gasPrice = await web3Unichain.eth.getGasPrice();
-        
-        //const amountFormatted = web3Unichain.utils.toWei(amount.toFixed(10).toString(), 'ether');
         const amountString = amount.toFixed(18);
         const tx = {
             from: senderAddress,
             to: toAddress,
-            //value: amountFormatted,
             value: web3Unichain.utils.toWei(amountString, 'ether'),
             gas: 21000,
             gasPrice: gasPrice,
@@ -503,8 +524,11 @@ async function sendEth(toAddress, amount, chatId) {
 
 ===================================
 `);
-
     } catch (error) {
         bot.sendMessage(chatId, `Unichain-Bot:\nTerjadi kesalahan saat mengirim transaksi ke ${toAddress}: ${error.message}`);
     }
 }
+
+bot.on('polling_error', (error) => {
+    console.error('Polling error:', error);
+});
